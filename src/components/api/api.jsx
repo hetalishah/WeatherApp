@@ -5,10 +5,13 @@ class Api extends Component {
     constructor(props){
         super(props)
         this.state = {
-                        city:'',
+                        city: '',
                         title:'',
-                        forecast: '',
-                        isFetching: true
+                        key:'',
+                        display:'hide',
+                        currentTime:'',
+                        currentText:'',
+                        currentTemp:''
                     }
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -21,23 +24,63 @@ class Api extends Component {
 
     handleSubmit(e) {
         e.preventDefault();
-        var url = `https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22`+this.state.city+`%22)%20and%20u%3D'c'&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys`;
+        const apikey = "PnefH8G0yoBMtQZ7H1f2L0CoQKpIrY26";
+
+       var url='http://dataservice.accuweather.com/locations/v1/cities/search?apikey='+apikey+'&q='+this.state.city+'&offset=0';
+        
         request.get(url)
         .then((response) => {
-                    const results = response.body.query;
-                    console.log(results);
+                                const results = response.body[0];
 
-                        this.setState({
-                                title: results.results.channel.location.city +", " + results.results.channel.location.region+", "+ results.results.channel.location.country,
-                                forecast:results.results.channel.item.forecast,
-                                isFetching: false
-                            })
+                                this.setState({
+                                    title: results.LocalizedName+", "+ results.AdministrativeArea.ID +", "+ results.Country.ID,
+                                    key: results.Key,
+                                    display: '',
+                                })
+                                var url2 ='http://dataservice.accuweather.com/forecasts/v1/hourly/12hour/'+this.state.key+'?apikey='+apikey+'&details=true';
+                                var current='http://dataservice.accuweather.com/currentconditions/v1/'+this.state.key+'?apikey='+apikey;
+                                request.get(url2)
+                                .then((response)=>{
+                                    const results2 = response.body;
+                                   this.setState({
+
+                                   })
+
+
+
+
+                                })
+
+
+                                request.get(current)
+                                .then((response)=>{
+                                    const current = response.body[0];
+                                    var time=current.LocalObservationDateTime;
+                                    var t=new Date(time);
+                                    console.log(t);
+
+                                    var hours=t.getHours();
+                                    var minutes=t.getMinutes();
+                                  // console.log(current);
+                                   this.setState({
+                                       currentTime:hours+":"+minutes,
+                                       currentText:current.WeatherText,
+                                       currentTemp:current.Temperature.Metric.Value +'\xB0'+ current.Temperature.Metric.Unit
+
+                                   })
+
+
+
+
+                                })
+
+
             
-        
-            
-                    console.log(this.state);
         })
-        .catch((err) => console.error(err))
+        .catch((err) => {
+            alert("Please enter a valid city");
+
+        })
 }
 
 
@@ -48,6 +91,11 @@ class Api extends Component {
                 <input onChange={this.handleChange} value={this.state.city} type="text" placeholder="Enter a city, zip, state, or a country"/>
                 <button>Search</button>
                 <p>{this.state.title}</p>
+                <div className={this.state.display}>
+                    <p>{this.state.currentTime}
+                    {this.state.currentText}
+                    {this.state.currentTemp} </p>
+                </div>
             </form>
             </div>
         )
